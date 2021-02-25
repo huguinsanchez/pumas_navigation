@@ -12,3 +12,6 @@
 *.swn
 *.#*
 *#
+
+devel/
+build/
