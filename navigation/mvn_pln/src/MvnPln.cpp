@@ -23,6 +23,7 @@ void MvnPln::initROSConnection(ros::NodeHandle* nh)
         this->subGetCloseLoc = nh->subscribe("/navigation/mvn_pln/get_close_loc", 10, &MvnPln::callbackGetCloseLoc, this);
         this->subGetCloseXYA = nh->subscribe("/navigation/mvn_pln/get_close_xya", 10, &MvnPln::callbackGetCloseXYA, this);
         this->subClickedPoint = nh->subscribe("/clicked_point", 1, &MvnPln::callbackClickedPoint, this);
+        this->sub2DNavGoal = nh->subscribe("/move_base_simple/goal", 1, &MvnPln::callback2DNavGoal, this);
         this->subRobotStop = nh->subscribe("/hardware/robot_state/stop", 10, &MvnPln::callbackRobotStop, this);
         this->pubGlobalGoalReached = nh->advertise<std_msgs::Bool>("/navigation/global_goal_reached", 10);
         this->pubLastPath = nh->advertise<nav_msgs::Path>("/navigation/mvn_pln/last_calc_path", 1);
@@ -501,4 +502,30 @@ void MvnPln::callbackCollisionPoint(const geometry_msgs::PointStamped::ConstPtr&
 {
         this->collisionPointX = msg->point.x;
         this->collisionPointY = msg->point.y;
+}
+
+void  MvnPln::callback2DNavGoal(const geometry_msgs::PoseStamped::ConstPtr& msg){
+    tf::Quaternion q(
+        msg->pose.orientation.x,
+        msg->pose.orientation.y,
+        msg->pose.orientation.z,
+        msg->pose.orientation.w);
+    tf::Matrix3x3 m(q);
+    double roll, pitch, yaw;
+    m.getRPY(roll, pitch, yaw);
+    
+    this->goalX = msg->pose.position.x;
+    this->goalY = msg->pose.position.y;
+    this->goalAngle = yaw;
+    this->newTask = true;
+
+    cout << "\033[1;37m     MvnPln.->Received desired goal pose: " << this->goalX << " " << this->goalY;
+    if(this->correctFinalAngle)
+            std::cout << " " << this->goalAngle;
+
+    std_msgs::Bool msgGoalReached;
+    msgGoalReached.data = false;
+    this->pubGlobalGoalReached.publish(msgGoalReached);
+    std::cout << "\033[0m" << endl;
+
 }

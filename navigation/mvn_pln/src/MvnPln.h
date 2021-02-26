@@ -16,6 +16,7 @@
 #include "std_msgs/Float32MultiArray.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/PointStamped.h"
+#include "geometry_msgs/PoseStamped.h"
 #include "visualization_msgs/MarkerArray.h"
 #include "pcl_conversions/pcl_conversions.h"
 #include "pcl_ros/point_cloud.h"
@@ -29,6 +30,7 @@
 #include "navig_msgs/PathFromMap.h"
 #include "navig_msgs/PlanPath.h"
 #include "navig_msgs/Location.h"
+#include <tf/tf.h>
 
 #include "takeshi_tools/TakeshiNavigation.h"
 #include "takeshi_tools/TakeshiManip.h"
@@ -59,6 +61,7 @@ private:
     ros::Subscriber subGetCloseLoc;
     ros::Subscriber subGetCloseXYA;
     ros::Subscriber subClickedPoint; //Used to catch clicks on rviz and modify location positions
+    ros::Subscriber sub2DNavGoal; //Used to send navigation goal from rviz using 2D Nav goal
     ros::Subscriber subRobotStop;
     ros::Publisher pubGlobalGoalReached;
     ros::Publisher pubLastPath;
@@ -100,6 +103,7 @@ private:
     void callbackRobotStop(const std_msgs::Empty::ConstPtr& msg);
     bool callbackPlanPath(navig_msgs::PlanPath::Request& req, navig_msgs::PlanPath::Response& resp);
     void callbackClickedPoint(const geometry_msgs::PointStamped::ConstPtr& msg);
+    void callback2DNavGoal(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void callbackGetCloseLoc(const std_msgs::String::ConstPtr& msg);
     void callbackGetCloseXYA(const std_msgs::Float32MultiArray::ConstPtr& msg);
     void callbackLaserScan(const sensor_msgs::LaserScan::ConstPtr& msg);

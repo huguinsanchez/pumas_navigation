@@ -489,10 +489,10 @@ int main(int argc, char** argv)
                 get_next_goal_from_path(robot_x, robot_y, robot_t, goal_x, goal_y, next_pose_idx, tf_listener);
                 error =sqrt((global_goal_x-robot_x)*(global_goal_x-robot_x) + (global_goal_y-robot_y)*(global_goal_y-robot_y));
                 
-                std::cout<<"---------------------------------------"<<std::endl;
-                std::cout<<"error for end the move: "<<error<<std::endl;
-                std::cout<<"speed for end the move: "<<cruise_speed<<std::endl;
-                std::cout<<"---------------------------------------"<<std::endl;
+                /*std::cout<<"---------------------------------------"<<std::endl;
+                std::cout<<"error for ending the move: "<<error<<std::endl;
+                std::cout<<"speed for ending the move: "<<cruise_speed<<std::endl;
+                std::cout<<"---------------------------------------"<<std::endl;*/
                 /*if(cruise_speed>0.1)
                     cruise_speed -= 0.01;
                 if(error < 0.05)
