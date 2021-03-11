@@ -17,12 +17,12 @@
 
   <!--arg name="map" default="$(find knowledge)/navigation/occupancy_grids/AIBot.yaml"/--> 
   <!-- arg name="map" default="/home/roboworks/Desktop/map.yaml"/ -->
-  <!--arg name="map" default="/workspace/catkin_ws/src/wrs2020/navigation_pumas/src/maps/wrs2020/map.yaml"/--> 
+  <arg name="map" default="/workspace/catkin_ws/src/wrs2020/pumas_navigation/src/maps/wrs2020/map.yaml"/> 
   <group ns="navigation">
     <group ns="localization">
-      <!--node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg map)"/-->
-      <node name="loc_amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hsrb/base_scan static_map:=/get_distance_map">
-      <!--node name="loc_amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hsrb/base_scan"-->
+      <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg map)"/>
+      <!--node name="loc_amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hsrb/base_scan static_map:=/get_distance_map"-->
+      <node name="loc_amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hsrb/base_scan">
         <!--param name="odom_alpha1" value="0.001"/>
         <param name="odom_alpha2" value="0.001"/>
         <param name="odom_alpha3" value="0.001"/>
