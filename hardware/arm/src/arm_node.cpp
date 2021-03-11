@@ -8,8 +8,8 @@
 #include <controller_manager_msgs/ListControllers.h>
 #include <tmc_control_msgs/GripperApplyEffortGoal.h>
 #include <tmc_control_msgs/GripperApplyEffortAction.h>
-#include <tmc_suction/SuctionControlAction.h>
-#include <tmc_suction/SuctionControlGoal.h>
+//#include <tmc_suction/SuctionControlAction.h>
+//#include <tmc_suction/SuctionControlGoal.h>
 #include <control_msgs/JointTrajectoryControllerState.h>
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/simple_client_goal_state.h>
@@ -29,10 +29,10 @@ bool wait_for_arm_goal_pose = false;
 bool wait_for_torso_goal_pose = false;
 
 tmc_control_msgs::GripperApplyEffortGoal goal;
-tmc_suction::SuctionControlGoal goal_suction;
+//tmc_suction::SuctionControlGoal goal_suction;
 
 
-void armSuctionCallback(const std_msgs::Bool::ConstPtr& msg)
+/*void armSuctionCallback(const std_msgs::Bool::ConstPtr& msg)
 {
   goal_suction.suction_on.data = msg->data;
 
@@ -42,7 +42,7 @@ void armSuctionCallback(const std_msgs::Bool::ConstPtr& msg)
     std::cout << "Takeshi Hardware->  SuctionGripper is  [INACTIVE]" << std::endl;
 
   msg_suction_recived = true;
-}
+}*/
 
 
 
@@ -123,7 +123,7 @@ int main(int argc, char **argv)
   ros::Subscriber  sub_pumas_arm_gp;
   ros::Subscriber  sub_pumas_gripp_gp;
   ros::Subscriber  sub_pumas_torque_gripp;
-  ros::Subscriber  sub_pumas_suction_gripp;
+  //ros::Subscriber  sub_pumas_suction_gripp;
   ros::Subscriber  sub_torso_goal_pose;
   ros::Subscriber  sub_hsr_arm_cp;
 
@@ -132,8 +132,8 @@ int main(int argc, char **argv)
   actionlib::SimpleActionClient<tmc_control_msgs::GripperApplyEffortAction>
     gripperActionClient("/hsrb/gripper_controller/grasp", true);
 
-  actionlib::SimpleActionClient<tmc_suction::SuctionControlAction>
-    suctionActionClient("/hsrb/suction_control");
+ /* actionlib::SimpleActionClient<tmc_suction::SuctionControlAction>
+    suctionActionClient("/hsrb/suction_control");*/
 
   ros::Rate        loop(60);
 
@@ -149,13 +149,13 @@ int main(int argc, char **argv)
   sub_pumas_arm_gp        = n.subscribe("/hardware/arm/goal_pose", 10, armGoalPoseCallback);
   sub_pumas_gripp_gp      = n.subscribe("/hardware/arm/goal_gripper", 10, gripperPoseCallback);
   sub_pumas_torque_gripp  = n.subscribe("/hardware/arm/torque_gripper", 10, gripperTorqueCallback);
-  sub_pumas_suction_gripp = n.subscribe("/hardware/arm/gripper_suction", 10, armSuctionCallback);
+  //sub_pumas_suction_gripp = n.subscribe("/hardware/arm/gripper_suction", 10, armSuctionCallback);
   sub_torso_goal_pose     = n.subscribe("/hardware/torso/goal_pose", 10, torsoGoalPoseCallback);
   sub_hsr_arm_cp          = n.subscribe("/hsrb/arm_trajectory_controller/state", 10, armCurrentPoseCallback);
 
     // wait for the action server to start
   gripperActionClient.waitForServer();
-  suctionActionClient.waitForServer();
+  //suctionActionClient.waitForServer();
 
 
   // wait to establish connection between the controller
@@ -280,11 +280,11 @@ int main(int argc, char **argv)
       msg_gripp_torq_recived = false;
     }
 
-    if(msg_suction_recived)
+    /*if(msg_suction_recived)
     {
       suctionActionClient.sendGoalAndWait(goal_suction);
       msg_suction_recived = false;
-    }
+    }*/
 
     if(pub_torso_curren_pose.getNumSubscribers() > 0)
       pub_torso_curren_pose.publish(msg_torso_current_pose);
