@@ -1,6 +1,7 @@
 #include <iostream>
 #include "ros/ros.h"
 #include "geometry_msgs/Pose2D.h"
+#include "geometry_msgs/PointStamped.h"
 #include "geometry_msgs/Twist.h"
 #include "nav_msgs/Path.h"
 #include "std_msgs/Float32.h"
@@ -31,6 +32,9 @@ bool  collision_risk = false;
 nav_msgs::Path goal_path;
 bool stop = false;
 
+float goal_dist_x  = 0;
+float goal_dist_y  = 0;
+bool move_rel = false;
 bool pot_fields = false;
 bool pot_fields_aux = false;
 float rej_force=0.0;
@@ -50,6 +54,21 @@ void callback_goal_dist(const std_msgs::Float32::ConstPtr& msg)
     goal_distance = msg->data;
     goal_angle    = 0;
     move_lateral  = false;
+    move_rel = false;
+    new_pose = true;
+    new_path = false;
+    stop     = false;
+    pot_fields_aux = false;
+}
+
+void callback_goal_mov_rel(const std_msgs::Float32MultiArray::ConstPtr& msg)
+{
+    std::cout << "SimpleMove.->New move received: goal x= " << msg->data[0] << " goal y= " << msg->data[1] << " and goal angle= " << msg->data[2] << std::endl;
+    goal_dist_x = msg->data[0];
+    goal_dist_y = msg->data[1];
+    goal_angle    = msg->data[2];
+    move_lateral  = false;
+    move_rel = true;
     new_pose = true;
     new_path = false;
     stop     = false;
@@ -62,6 +81,7 @@ void callback_goal_dist_angle(const std_msgs::Float32MultiArray::ConstPtr& msg)
     goal_distance = msg->data[0];
     goal_angle    = msg->data[1];
     move_lateral  = false;
+    move_rel = false;
     new_pose = true;
     new_path = false;
     stop     = false;
@@ -73,6 +93,7 @@ void callback_goal_path(const nav_msgs::Path::ConstPtr& msg)
     std::cout << "SimpleMove.->New path received with " << msg->poses.size() << " points" << std::endl;
     goal_path = *msg;
     move_lateral  = false;
+    move_rel = false;
     new_pose = false;
     new_path = true;
     stop     = false;
@@ -85,6 +106,7 @@ void callback_goal_lateral_dist(const std_msgs::Float32::ConstPtr& msg)
     goal_distance = msg->data;
     goal_angle    = 0;
     move_lateral  = true;
+    move_rel = false;
     new_pose = true;
     new_path = false;
     stop     = false;
@@ -150,6 +172,41 @@ geometry_msgs::Twist calculate_speeds_lateral(float robot_x, float robot_y, floa
     
 }
 
+geometry_msgs::Twist calculate_speeds_move_rel(float robot_x, float robot_y, float robot_t, float goal_x,
+                          float goal_y, float goal_t, float cruise_speed)
+{
+    //Control constants
+    float beta = 0.2;
+    float max_angular = 0.5;
+
+    //Error calculation
+    float error_x= goal_x-robot_x;
+    float error_y= goal_y-robot_y;
+    float angle_error = goal_t - robot_t;
+    if(angle_error >   M_PI) angle_error -= 2*M_PI;
+    if(angle_error <= -M_PI) angle_error += 2*M_PI;
+
+    /// TRANSFORM TO BASELIK ERRORS
+    float error_x_base=0;
+    float error_y_base=0;
+    error_x_base=error_x*cos(robot_t)+error_y*sin(robot_t);
+    error_y_base=error_x*(-1*sin(robot_t))+error_y*cos(robot_t);
+
+    geometry_msgs::Twist result;
+    result.linear.x  = 1.8 * error_x_base; 
+    result.linear.y  = 1.8 * error_y_base; 
+    result.angular.z = angle_error;// max_angular * (2 / (1 + exp(-angle_error / beta)) - 1);// 
+    //Debug
+    float error = sqrt(error_x*error_x + error_y*error_y);
+    std::cout<< "----------------------------------------------------------------"<<std::endl;
+    std::cout<< "robot_x: "<<robot_x<<" goal_x: "<<goal_x<<" error_x: "<<error_x<<" linear.x= "<<result.linear.x<<std::endl;
+    std::cout<< "robot_y: "<<robot_y<<" goal_y: "<<goal_y<<" error_y: "<<error_y<<" linear.y= "<<result.linear.y<<std::endl;
+    std::cout<< "robot_t: "<<robot_t<<" goal_t: "<<goal_t<<" error_angle: "<<angle_error<<" angular.z= "<<result.angular.z<<std::endl;
+    std::cout<< "euclidian distance: "<<error<<std::endl;
+    return result;
+    
+}
+
 geometry_msgs::Twist calculate_speeds(float robot_angle, float goal_angle)
 {
     //Control constants
@@ -205,6 +262,40 @@ void get_goal_position_wrt_odom(float goal_distance, float goal_angle, tf::Trans
     if(goal_t >   M_PI) goal_t -= 2*M_PI;
     if(goal_t <= -M_PI) goal_t += 2*M_PI;
 }
+
+void get_goal_position_wrt_odom_move_rel(float goal_dist_x, float goal_dist_y, float goal_angle, tf::TransformListener& tf_listener,
+                float& goal_x, float& goal_y, float& goal_t)
+{
+    tf::StampedTransform transform;
+    tf_listener.lookupTransform("odom", "base_link", ros::Time(0), transform);
+    float robot_x = transform.getOrigin().x();
+    float robot_y = transform.getOrigin().y();
+    tf::Quaternion q = transform.getRotation();
+    float robot_t = atan2((float)q.z(), (float)q.w()) * 2;
+
+    geometry_msgs::PointStamped tarjet_in;
+    geometry_msgs::Point tarjet_out;
+    tarjet_in.header.stamp=ros::Time(0);
+    tarjet_in.header.frame_id="base_link";
+    tarjet_in.point.x=goal_dist_x;
+    tarjet_in.point.y=goal_dist_y;
+    tarjet_in.point.z=0;
+
+    tf_listener.transformPoint("odom",tarjet_in,tarjet_in);
+
+    //goal_angle += M_PI / 2;
+    goal_x = tarjet_in.point.x;
+    goal_y = tarjet_in.point.y;
+    goal_t = robot_t + goal_angle;
+    //goal_t -= M_PI / 2;
+    if(goal_t >   M_PI) goal_t -= 2*M_PI;
+    if(goal_t <= -M_PI) goal_t += 2*M_PI;
+    std::cout<< "\n\n\n----------------------------------------------------------------"<<std::endl;
+    std::cout<< "GET POSITION"<<std::endl;
+    std::cout<< "t_in: "<<tarjet_in.point.x<<" t_in: "<<tarjet_in.point.y<<std::endl;
+    std::cout<< "robot_t: "<<robot_t<<" goal_angle: "<<goal_angle<<" goal_t: "<<goal_t<<std::endl;
+}
+
 
 void get_next_goal_from_path(float& robot_x, float& robot_y, float& robot_t, float& goal_x, float& goal_y,
                              int& next_pose_idx, tf::TransformListener& tf_listener)
@@ -264,6 +355,7 @@ int main(int argc, char** argv)
     ros::Subscriber sub_goalLateralDist  = n.subscribe("simple_move/goal_lateral", 1, callback_goal_lateral_dist);           
     ros::Subscriber sub_gollisionRisk    = n.subscribe("/navigation/obs_avoid/collision_risk", 10, callback_collision_risk);
     ros::Subscriber sub_potFields        = n.subscribe("/navigation/obs_avoid/pot_fields/rejective_force", 1, callback_pot_fields);
+    ros::Subscriber sub_goalRel     = n.subscribe("simple_move/goal_move_rel", 1, callback_goal_mov_rel);                     
     tf::TransformListener tf_listener;
     ros::Rate loop(20);
 
@@ -322,7 +414,13 @@ int main(int argc, char** argv)
             cruise_speed = 0;
             if(new_pose)
             {
-                get_goal_position_wrt_odom(goal_distance, goal_angle, tf_listener, goal_x, goal_y, goal_t, move_lateral);
+                if(!move_rel){
+                    get_goal_position_wrt_odom(goal_distance, goal_angle, tf_listener, goal_x, goal_y, goal_t, move_lateral);
+                }
+                else{
+                    get_goal_position_wrt_odom_move_rel(goal_dist_x,goal_dist_y, goal_angle,tf_listener, goal_x,goal_y,goal_t);
+                    goal_distance=sqrt((goal_dist_x*goal_dist_y)+(goal_dist_y*goal_dist_y));
+                }
                 state = SM_GOAL_POSE_ACCEL;
                 new_pose = false;
 		attempts = (int)((fabs(goal_distance)+0.1)/0.2*60 + fabs(goal_angle)/0.5*60);
@@ -353,8 +451,11 @@ int main(int argc, char** argv)
                 else
                     state = SM_GOAL_POSE_ACCEL;
 
-                if(move_lateral)
+                if(move_lateral){
                     twist = calculate_speeds_lateral(robot_x, robot_y, robot_t, goal_x, goal_y, cruise_speed);
+                }else if(move_rel){
+                    twist = calculate_speeds_move_rel(robot_x, robot_y, robot_t, goal_x, goal_y, goal_t, cruise_speed);
+                }
                 else
                     twist = calculate_speeds(robot_x, robot_y, robot_t, goal_x, goal_y, cruise_speed, goal_distance < 0);
                 pub_cmd_vel.publish(twist);
@@ -370,8 +471,11 @@ int main(int argc, char** argv)
             if(error < cruise_speed)
                 state = SM_GOAL_POSE_DECCEL;
 
-            if(move_lateral)
+            if(move_lateral){
                 twist = calculate_speeds_lateral(robot_x, robot_y, robot_t, goal_x, goal_y, cruise_speed);
+            }else if(move_rel){
+                    twist = calculate_speeds_move_rel(robot_x, robot_y, robot_t, goal_x, goal_y, goal_t, cruise_speed);
+                }
             else
                 twist = calculate_speeds(robot_x, robot_y, robot_t, goal_x, goal_y, cruise_speed, goal_distance < 0);
             pub_cmd_vel.publish(twist);
@@ -384,11 +488,14 @@ int main(int argc, char** argv)
             cruise_speed -= 0.007;
             get_robot_position_wrt_odom(tf_listener, robot_x, robot_y, robot_t);
             error = sqrt((goal_x - robot_x)*(goal_x - robot_x) + (goal_y - robot_y)*(goal_y - robot_y));
-            if(error < 0.035 || cruise_speed <= 0)
+            if(error < 0.015 || cruise_speed <= 0)
                 state = SM_GOAL_POSE_CORRECT_ANGLE;
 
-            if(move_lateral)
+            if(move_lateral){
                 twist = calculate_speeds_lateral(robot_x, robot_y, robot_t, goal_x, goal_y, cruise_speed);
+            }else if(move_rel){
+                    twist = calculate_speeds_move_rel(robot_x, robot_y, robot_t, goal_x, goal_y, goal_t, cruise_speed);
+                }
             else
                 twist = calculate_speeds(robot_x, robot_y, robot_t, goal_x, goal_y, cruise_speed, goal_distance < 0);
             pub_cmd_vel.publish(twist);
