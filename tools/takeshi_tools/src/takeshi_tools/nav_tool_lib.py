@@ -5,10 +5,6 @@ import hsrb_interface
 from std_msgs.msg import Float32MultiArray, Bool, Empty
 from geometry_msgs.msg import Pose, Vector3, Quaternion, PoseStamped
 
-#global _navigation_setter
-#global omnibase
-
-#_navigation_setter="hsr"
 global globalGoalReached
 global goalReached
 global omnibase
@@ -18,6 +14,7 @@ global robot_stop
 globalGoalReached=True
 goalReached=True
 robot_stop=False
+
 def callback_global_goal_reached(msg):
 	global globalGoalReached
 	globalGoalReached = msg.data
@@ -47,6 +44,7 @@ class nav_module():
 		whole_body = robot.get("whole_body")
 		self.pubGlobalGoalXYZ = rospy.Publisher('/navigation/mvn_pln/get_close_xya', Float32MultiArray, queue_size=1)
 		self.pubDistAngle = rospy.Publisher('/navigation/path_planning/simple_move/goal_dist_angle', Float32MultiArray, queue_size=1)
+		self.pubMoveRel = rospy.Publisher('/navigation/path_planning/simple_move/goal_move_rel', Float32MultiArray, queue_size=1)
 		self.pubRobotStop = rospy.Publisher('/hardware/robot_state/stop', Empty, queue_size=1)
 		rospy.Subscriber("/navigation/global_goal_reached", Bool, callback_global_goal_reached)
 		rospy.Subscriber("/navigation/goal_reached", Bool, callback_goal_reached)
@@ -140,21 +138,51 @@ class nav_module():
 		rospy.sleep(x)
 
 
+	def go_dist_angle(self, x=0.0, yaw=0.0,timeout=0.0, type_nav=None):
+		self.moveDistAngle(x,yaw,timeout)
+
+	def moveRel(self,x, y, yaw, timeout):
+		global goalReached
+		global robot_stop
+		rate=rospy.Rate(10)
+		goal=Float32MultiArray()
+		goalReached =False
+		robot_stop=False
+		goal.data=[x,y,yaw]
+		#print  goal.data
+		if timeout!=0:
+			attemps=int(timeout*10)
+		else:
+			attemps=10000000000000
+		self.pubMoveRel.publish(goal)
+		rate.sleep()
+		rospy.sleep(5.)
+		while not goalReached and not rospy.is_shutdown() and not robot_stop and attemps>=0:
+			attemps-=1
+			rate.sleep()
+		robot_stop=False
+		if not goalReached:
+			msg_stop=Empty()
+			self.pubRobotStop.publish(msg_stop)
+			rate.sleep()
+			rospy.sleep(5.)
+		rate.sleep()
+		x=rospy.Duration.from_sec(2.5)
+		rospy.sleep(x)
+
 	def go_rel(self, x=0.0, y=0.0, yaw=0.0,timeout=0.0, type_nav=None):
 		if type_nav=="pumas":
-			self.moveDistAngle(x,yaw,timeout)
+			self.moveRel(x,y,yaw,timeout)
 		elif type_nav=="hsr":
 			omnibase.go_rel(x,y,yaw,timeout)
 		else:
 			if self.navigation_setter=="pumas":
-				self.moveDistAngle(x,yaw, timeout)
+				self.moveRel(x,y,yaw, timeout)
 			else:
 				omnibase.go_rel(x,y,yaw,timeout)	
 
 
 
-
-	
 	##############################
 	##   HSR Functions bypass   ##
 	##############################
