@@ -3,7 +3,9 @@
   <!--param name="/use_sim_time" value="true"/-->
 
   <remap from="/hardware/mobile_base/cmd_vel" to="/hsrb/command_velocity"/>
-  <remap from="/navigation/localization/static_map" to="/get_distance_map"/>
+  <remap from="/navigation/localization/static_map" to="/get_augmented_map"/>
+  <remap from="/map" to="/static_distance_map_ref"/>
+  <!--remap from="/navigation/localization/static_map" to="/get_distance_map"/-->
   <param name="robot_description_semantic" textfile="$(find knowledge)/manipulation/hsrb.srdf"/>
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find knowledge)/hri/config.rviz">
     <remap from="/initialpose" to="/navigation/localization/initialpose"/>
@@ -56,6 +58,10 @@
 
   </group>
 
+  <node name="map_enhancer" pkg="augmented_gridmaps" type="augmented_gridmaps_node" output="screen">
+        <remap from="point_obstacle" to="/clicked_point"/>
+        <param name="obstacle_radius" value="0.075" type="double"/>
+      </node>
   
 
   <group ns="manipulation">
