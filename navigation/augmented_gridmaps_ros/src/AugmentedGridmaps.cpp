@@ -4,8 +4,14 @@ namespace ros_augmented_gridmaps{
 
 AugmentedGridMap::AugmentedGridMap(ros::NodeHandle &nodeHandle)
   :nodeHandle_(nodeHandle)
-{                     
-  mapSubscriber = nodeHandle_.subscribe("/static_distance_map_ref",1,&AugmentedGridMap::saveMap,this);
+{ 
+   //Private nodehandle only for parameters
+  ros::NodeHandle private_nh("~"); 
+  private_nh.param<float>("obstacle_radius",obstacle_radius,0.05);
+  private_nh.param<bool>("debug",debug,false);
+  private_nh.param<std::string>("input_map",input_map,"map");
+
+  mapSubscriber = nodeHandle_.subscribe(input_map,1,&AugmentedGridMap::saveMap,this);
   pointSubscriber = nodeHandle_.subscribe("point_obstacle",1,&AugmentedGridMap::addPointCallback,this);
   // Latched publisher for data
   augmented_map_pub = nodeHandle_.advertise<nav_msgs::OccupancyGrid>("augmented_map", 1, true);
@@ -22,10 +28,7 @@ AugmentedGridMap::AugmentedGridMap(ros::NodeHandle &nodeHandle)
   //Service to publish current augmented map
   getAugmentedMap = nodeHandle_.advertiseService("get_augmented_map",&AugmentedGridMap::getAugmentedMapCallback,this);
 
-  //Private nodehandle only for parameters
-  ros::NodeHandle private_nh("~"); 
-  private_nh.param<float>("obstacle_radius",obstacle_radius,0.05);
-  private_nh.param<bool>("debug",debug,false);
+
   ROS_INFO("Map enhancer node Initialization finished");
   return;
 }

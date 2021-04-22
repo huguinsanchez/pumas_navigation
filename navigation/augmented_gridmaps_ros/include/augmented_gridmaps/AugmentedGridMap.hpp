@@ -41,6 +41,7 @@ class AugmentedGridMap
   std::vector<geometry_msgs::Point> obstacles;  
   float obstacle_radius;
   bool debug;
+  std::string input_map;
   nav_msgs::OccupancyGrid original_map;
   nav_msgs::MapMetaData map_metadata;
   nav_msgs::OccupancyGrid enhanced_map;

@@ -3,11 +3,11 @@
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "augmented_gridmap_node");
-  ros::NodeHandle nodeHandle;
+	ros::init(argc, argv, "augmented_gridmap_node");
+	ros::NodeHandle nodeHandle;
 
-  ros_augmented_gridmaps::AugmentedGridMap rosAgmentedGridmap(nodeHandle);
+	ros_augmented_gridmaps::AugmentedGridMap rosAgmentedGridmap(nodeHandle);
 
-  ros::spin();
-  return 0;
-}
+	ros::spin();
+	return 0;
+	}
