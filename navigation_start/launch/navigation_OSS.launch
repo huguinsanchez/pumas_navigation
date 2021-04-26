@@ -53,6 +53,7 @@
       <node name="map_enhancer" pkg="augmented_gridmaps" type="augmented_gridmaps_node" output="screen">
         <remap from="point_obstacle" to="/clicked_point"/>
         <param name="obstacle_radius" value="0.075" type="double"/>
+        <param name="input_map" value="/map"/>
       </node>
     </group>
     <node name="mvn_pln" pkg="mvn_pln" type="mvn_pln_node" respawn="true" output="screen" args="--max_attempts 25"/>
