@@ -3,9 +3,9 @@
   <!--param name="/use_sim_time" value="true"/-->
 
   <remap from="/hardware/mobile_base/cmd_vel" to="/hsrb/command_velocity"/>
-  <!--remap from="/navigation/localization/static_map" to="/get_distance_map"/-->
   <remap from="/navigation/localization/static_map" to="/navigation/obs_avoid/get_augmented_map"/>
-  <param name="robot_description_semantic" textfile="$(find knowledge)/manipulation/hsrb.srdf"/>
+  <!--remap from="/static_map" to="/navigation/obs_avoid/get_augmented_map"/-->
+  <!--param name="robot_description_semantic" textfile="$(find knowledge)/manipulation/hsrb.srdf"/-->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find knowledge)/hri/config.rviz">
     <remap from="/initialpose" to="/navigation/localization/initialpose"/>
   </node>
@@ -21,7 +21,7 @@
   <arg name="map" default="/workspace/catkin_ws/src/wrs2020/pumas_navigation/src/maps/wrs2020/map.yaml"/> 
   <group ns="navigation">
     <group ns="localization">
-      <node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg map)"/>
+      <!--node name="map_server" pkg="map_server" type="map_server" output="screen" args="$(arg map)"/-->
       <!--node name="loc_amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hsrb/base_scan static_map:=/get_distance_map"-->
       <node name="loc_amcl" pkg="amcl" type="amcl" output="screen" args="scan:=/hsrb/base_scan">
         <!--param name="odom_alpha1" value="0.001"/>
@@ -53,10 +53,11 @@
       <node name="map_enhancer" pkg="augmented_gridmaps" type="augmented_gridmaps_node" output="screen">
         <remap from="point_obstacle" to="/clicked_point"/>
         <param name="obstacle_radius" value="0.075" type="double"/>
+        <param name="input_map" value="/map"/>
       </node>
     </group>
     <node name="mvn_pln" pkg="mvn_pln" type="mvn_pln_node" respawn="true" output="screen" args="--max_attempts 25"/>
-    <node name="killer_node" pkg="killer_node" type="killer_node.py" respawn="true" output="screen"/>
+    <!--node name="killer_node" pkg="killer_node" type="killer_node.py" respawn="true" output="screen"/-->
     <node name="fake_global_pose" pkg="killer_node" type="fake_global_pose.py" respawn="true" output="screen"/>
 
   </group>
