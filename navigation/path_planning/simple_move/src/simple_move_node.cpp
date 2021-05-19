@@ -364,9 +364,9 @@ int main(int argc, char** argv)
     try
     {
         tf_listener.waitForTransform("map", "base_link", ros::Time(0), ros::Duration(10.0));
-        tf_listener.waitForTransform("base_footprint", "base_link", ros::Time(0), ros::Duration(10.0));
+        tf_listener.waitForTransform("odom", "base_link", ros::Time(0), ros::Duration(10.0));
         tf_listener.lookupTransform("map", "base_link", ros::Time(0), transform);
-        tf_listener.lookupTransform("base_footprint", "base_link", ros::Time(0), transform);
+        tf_listener.lookupTransform("odom", "base_link", ros::Time(0), transform);
     }
     catch(...)
     {
