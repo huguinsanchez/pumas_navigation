@@ -5,6 +5,7 @@ from utils import *
 from geometry_msgs.msg import PointStamped
 from takeshi_tools.nav_tool_lib_OSS import nav_module
 
+
 def segment_floor():
     image_data = rgbd.get_image()
     points_data = rgbd.get_points()
@@ -94,8 +95,6 @@ def static_tf_publish(cents):
 
         tf_static_broadcaster.sendTransform(static_transformStamped)
     return True
-
-
 
 
 ########## Functions for takeshi states ##########
@@ -202,14 +201,13 @@ def add_object(name, size, pose, orientation):
 
 
 def publish_scene():
-    #add_object("shelf", [0.8, 0.28, 2.02], [2, 4.7, 0.78], [0.5, 0.5])
-    add_object("table_big", [1.7, 0.13, 0.7], [0.95, 1.9, 0.34], [0.5, 0.5])
-    add_object("table_small", [0.5, 0.01, 0.4], [0.1, 1.9, 0.61], [0.5, 0.5])
-    add_object("table_tray", [0.65, 0.01, 0.7], [1.8, -0.65, 0.4], [0.5, 0.5])    
+    add_object("shelf", [1.7, 0.13, 0.7], [0.95, 1.9, 0.34], [0.5, 0.5])
+    #add_object("table_small", [0.5, 0.01, 0.4], [0.1, 1.9, 0.61], [0.5, 0.5])
+    #add_object("table_tray", [0.65, 0.01, 0.7], [1.8, -0.65, 0.4], [0.5, 0.5])    
     return True
 
 
-"""def segment_shelf():
+def segment_shelf():
     image_data = rgbd.get_image()
     points_data = rgbd.get_points()
 
@@ -219,7 +217,6 @@ def publish_scene():
     plane_mask = image_data[:, :, 1]
 
     ret, thresh = cv2.threshold(image_data[:, :, 2], 240, 255, 200)
-    plt.imshow(thresh)
     plane_mask = points_data['z']
     cv2_img = plane_mask.astype('uint8')
     img = image_data[:, :, 0]
@@ -248,55 +245,9 @@ def publish_scene():
             cv2.circle(img, (cX, cY), 5, (255, 255, 255), -1)
             cv2.putText(img, "centroid_" + str(i) + "_" + str(cX) + ',' + str(cY), (cX - 25, cY - 25), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2)
     cents = np.asarray(cents)
-    return cents"""
-
-
-def segment_table2(chan):
-    image_data=rgbd.get_image()
-    points_data = rgbd.get_points()
-
-    mask=np.zeros((image_data.shape))
-    plane_mask=np.zeros((image_data.shape[0],image_data.shape[1]))
-
-    plane_mask=image_data[:,:,chan]
-
-    ret,thresh = cv2.threshold(image_data[:,:,2],240,255,200)
-    plane_mask=points_data['z']
-    cv2_img=plane_mask.astype('uint8')
-    img=image_data[:,:,0]
-    _,contours, hierarchy = cv2.findContours(thresh.astype('uint8'),cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-    i=0
-    cents=[]
-    for i, contour in enumerate(contours):
-        area = cv2.contourArea(contour)
-
-        if area > 200 and area < 50000 :
-            print('contour',i,'area',area)
-
-            boundRect = cv2.boundingRect(contour)
-            #just for drawing rect, dont waste too much time on this
-            print boundRect
-            img=cv2.rectangle(img,(boundRect[0], boundRect[1]),(boundRect[0]+boundRect[2], boundRect[1]+boundRect[3]), (0,0,0), 2)
-            # calculate moments for each contour
-            xyz=[]
-
-
-            for jy in range (boundRect[0], boundRect[0]+boundRect[2]):
-                for ix in range(boundRect[1], boundRect[1]+boundRect[3]):
-                    xyz.append(np.asarray((points_data['x'][ix,jy],points_data['y'][ix,jy],points_data['z'][ix,jy])))
-            xyz=np.asarray(xyz)
-            cent=xyz.mean(axis=0)
-            cents.append(cent)
-            M = cv2.moments(contour)
-            # calculate x,y coordinate of center
-            cX = int(M["m10"] / M["m00"])
-            cY = int(M["m01"] / M["m00"])
-            cv2.circle(img, (cX, cY), 5, (255, 255, 255), -1)
-            cv2.putText(img, "centroid_"+str(i)+"_"+str(cX)+','+str(cY)    ,    (cX - 25, cY - 25)   ,cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0), 2)
-            print ('cX,cY',cX,cY)
-    cents=np.asarray(cents)
+    return cents
     
-    return (cents)
+
 
 ########## Clases derived from Takeshi_states, please only define takeshi_run() ##########
 
@@ -321,7 +272,6 @@ class go_to_door(Takeshi_states):
             return True
         except:
             return False
-
 class looking_for_objects(smach.State):
     def __init__(self):
         smach.State.__init__(self,outcomes=['succ','failed','tries'])
@@ -338,7 +288,7 @@ class looking_for_objects(smach.State):
         cents = segment_floor()
         #if len(cents)<1:
         #    return 'failed'
-        print("cents")
+        print("centes")
         print(len(cents),cents)
         pub = rospy.Publisher('/clicked_point', PointStamped, queue_size=10)
         trans, rot = listener.lookupTransform('/map', '/head_rgbd_sensor_gazebo_frame', rospy.Time(0))
@@ -386,33 +336,34 @@ class go_to_shelf(Takeshi_states):
         except:
             return False
 
+
 ##### Define state SCAN_SHELF #####
 #Va al shelf, voltea  la cabeza y escanea el estante
 class Scan_shelf_hl(Takeshi_states):
     def takeshi_run(self):     
         global cents, rot, trans
-        #goal_x , goal_y, goal_yaw = kl_shelf        
+        goal_x , goal_y, goal_yaw = kl_shelf        
         head_val = head.get_current_joint_values()
         head_val[0] = np.deg2rad(0)
         head_val[1] = np.deg2rad(0)        
         head.go(head_val)
-        #succ = move_base_goal(goal_x, goal_y, goal_yaw)        
+        succ = move_base_goal(goal_x, goal_y, goal_yaw)        
         trans, rot = listener.lookupTransform('/map', '/head_rgbd_sensor_gazebo_frame', rospy.Time(0))
         euler = tf.transformations.euler_from_quaternion(rot)
         #print(trans, euler)
         cents = segment_shelf()
         static_tf_publish(cents)
-        succ =  True
         return succ
 
 ##### Define state PRE_GRASP_SHELF_HL #####
 #Acomoda el brazo, abre la garra y se acerca al objeto para grasp
+
+
 class Pre_grasp_shelf_hl(Takeshi_states):
     def takeshi_run(self):
         global closest_cent
         move_hand(1)
         publish_scene()
-
         arm.go(arm_grasp_shelf_hl)        
         trans_cents = []
         
@@ -482,7 +433,7 @@ class Listen_deliver_goal(Takeshi_states):
         self.msg = message.get_data()
         self.whom = str(self.msg).split('"')
         self.whom[1].strip('"')
-        self.whom[1] = "left person"
+        
         if self.whom[1] == "left person":
             rospy.loginfo("Delivering to the %s", self.whom[1])
             goal_x, goal_y, goal_yaw =  kl_l_deliver #Known location friends_left
@@ -526,7 +477,7 @@ def init(node_name):
     rgbd = RGBD()
     message = Message()
     omni_base=nav_module()
-   
+
 #Entry point    
 if __name__== '__main__':
     print("Takeshi STATE MACHINE...")
@@ -536,17 +487,19 @@ if __name__== '__main__':
 
     with sm:
         #State machine for grasping from shelf
-        smach.StateMachine.add("INITIAL",               Initial(),              transitions = {'failed':'INITIAL',             'succ': 'GO_TO_DOOR',            'tries':'END'}) 
-        smach.StateMachine.add("GO_TO_DOOR",            go_to_door(),           transitions = {'failed':'GO_TO_DOOR',          'succ': 'LOOKING_FOR_OBJECTS',   'tries':'END'}) 
-        smach.StateMachine.add("LOOKING_FOR_OBJECTS",   looking_for_objects(),  transitions = {'failed':'LOOKING_FOR_OBJECTS', 'succ': 'GO_TO_SHELF',           'tries':'END'}) 
-        smach.StateMachine.add("GO_TO_SHELF",           go_to_shelf(),          transitions = {'failed':'GO_TO_SHELF',          'succ': 'SCAN_SHELF_HL',        'tries':'END'}) 
-        smach.StateMachine.add("SCAN_SHELF_HL",         Scan_shelf_hl(),        transitions = {'failed':'SCAN_SHELF_HL',        'succ': 'PRE_GRASP_SHELF_HL',   'tries':'END'}) 
-        smach.StateMachine.add('PRE_GRASP_SHELF_HL',    Pre_grasp_shelf_hl(),   transitions = {'failed':'PRE_GRASP_SHELF_HL',   'succ': 'GRASP_SHELF_HL',       'tries':'END'}) 
-        smach.StateMachine.add('GRASP_SHELF_HL',        Grasp_shelf_hl(),       transitions = {'failed':'GRASP_SHELF_HL',       'succ': 'POST_GRASP_SHELF_HL',  'tries':'END'}) 
-        smach.StateMachine.add('POST_GRASP_SHELF_HL',   Post_grasp_shelf_hl(),  transitions = {'failed':'INITIAL',              'succ': 'GO_DELIVER_CENTER',    'tries':'END'})
-        smach.StateMachine.add('GO_DELIVER_CENTER',     Go_deliver_center(),    transitions = {'failed':'GO_DELIVER_CENTER',    'succ': 'LISTEN_DELIVER_GOAL',  'tries':'END'})
-        smach.StateMachine.add('LISTEN_DELIVER_GOAL',   Listen_deliver_goal(),  transitions = {'failed':'LISTEN_DELIVER_GOAL',  'succ': 'DELIVER',              'tries':'END'})
-        smach.StateMachine.add('DELIVER',               Deliver(),              transitions = {'failed':'DELIVER',              'succ': 'INITIAL',              'tries':'END'})
+        smach.StateMachine.add("INITIAL",                Initial(),              transitions = {'failed':'INITIAL',              'succ': 'GO_TO_DOOR',           'tries':'END'}) 
+        smach.StateMachine.add("GO_TO_DOOR",             go_to_door(),           transitions = {'failed':'GO_TO_DOOR',           'succ': 'LOOKING_FOR_OBJECTS',  'tries':'END'}) 
+        smach.StateMachine.add("LOOKING_FOR_OBJECTS",    looking_for_objects(),  transitions = {'failed':'LOOKING_FOR_OBJECTS',  'succ': 'GO_TO_SHELF',          'tries':'END'}) 
+        smach.StateMachine.add("GO_TO_SHELF",           go_to_shelf(),          transitions = {'failed':'END',                  'succ': 'END',                  'tries':'END'}) 
+#        smach.StateMachine.add("SCAN_SHELF_HL",         Scan_shelf_hl(),        transitions = {'failed':'SCAN_SHELF_HL',        'succ': 'PRE_GRASP_SHELF_HL',   'tries':'END'}) 
+#        smach.StateMachine.add('PRE_GRASP_SHELF_HL',    Pre_grasp_shelf_hl(),   transitions = {'failed':'PRE_GRASP_SHELF_HL',   'succ': 'GRASP_SHELF_HL',       'tries':'END'}) 
+#        smach.StateMachine.add('GRASP_SHELF_HL',        Grasp_shelf_hl(),       transitions = {'failed':'GRASP_SHELF_HL',       'succ': 'POST_GRASP_SHELF_HL',  'tries':'END'}) 
+#        smach.StateMachine.add('POST_GRASP_SHELF_HL',   Post_grasp_shelf_hl(),  transitions = {'failed':'INITIAL',              'succ': 'GO_DELIVER_CENTER',    'tries':'END'})
+#        smach.StateMachine.add('GO_DELIVER_CENTER',     Go_deliver_center(),    transitions = {'failed':'GO_DELIVER_CENTER',    'succ': 'LISTEN_DELIVER_GOAL',  'tries':'END'})
+#        smach.StateMachine.add('LISTEN_DELIVER_GOAL',   Listen_deliver_goal(),  transitions = {'failed':'LISTEN_DELIVER_GOAL',  'succ': 'DELIVER',              'tries':'END'})
+#        smach.StateMachine.add('DELIVER',               Deliver(),              transitions = {'failed':'DELIVER',              'succ': 'INITIAL',              'tries':'END'})
 
     outcome = sm.execute()
 
+
+    
