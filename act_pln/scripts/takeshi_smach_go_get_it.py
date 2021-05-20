@@ -538,7 +538,7 @@ if __name__== '__main__':
         #State machine for grasping from shelf
         smach.StateMachine.add("INITIAL",               Initial(),              transitions = {'failed':'INITIAL',             'succ': 'GO_TO_DOOR',            'tries':'END'}) 
         smach.StateMachine.add("GO_TO_DOOR",            go_to_door(),           transitions = {'failed':'GO_TO_DOOR',          'succ': 'LOOKING_FOR_OBJECTS',   'tries':'END'}) 
-        smach.StateMachine.add("LOOKING_FOR_OBJECTS",   looking_for_objects(),  transitions = {'failed':'LOOKING_FOR_OBJECTS', 'succ': 'GO_TO_SHELF',           'tries':'END'}) 
+        smach.StateMachine.add("LOOKING_FOR_OBJECTS",   looking_for_objects(),  transitions = {'failed':'LOOKING_FOR_OBJECTS', 'succ': 'END',           'tries':'END'}) 
         smach.StateMachine.add("GO_TO_SHELF",           go_to_shelf(),          transitions = {'failed':'GO_TO_SHELF',          'succ': 'SCAN_SHELF_HL',        'tries':'END'}) 
         smach.StateMachine.add("SCAN_SHELF_HL",         Scan_shelf_hl(),        transitions = {'failed':'SCAN_SHELF_HL',        'succ': 'PRE_GRASP_SHELF_HL',   'tries':'END'}) 
         smach.StateMachine.add('PRE_GRASP_SHELF_HL',    Pre_grasp_shelf_hl(),   transitions = {'failed':'PRE_GRASP_SHELF_HL',   'succ': 'GRASP_SHELF_HL',       'tries':'END'}) 
